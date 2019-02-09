@@ -28,3 +28,5 @@ Setup init script
 sudo cp wemo /etc/init.d/wemo
 sudo update-rc.d wemo defaults
 ```
+
+Thanks to Amanpreet Singh for original inspriation.
