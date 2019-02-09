@@ -1,70 +1,30 @@
-#!/usr/bin/env node
+var wemore = require('wemore');
+var exec = require('child_process').exec;
 
-/*
-* @Author: Amanpreet Singh
-* @Email : Amanpreet.dev@gmail.com
-*/
+var i = 0;
 
-var wemore 	= require('wemore');
-var exec 	= require('child_process').exec;
-var path	= require('path');
+var devicesPath = process.cwd() + "/devices.json";
+var devices = require(devicesPath);
 
-var deviceRefs = [], i = 0;
+Object.keys(devices).forEach(deviceName => {
+  var device = devices[deviceName];
+  var port = 9000 + i++;
+  var wemo = wemore.Emulate({ friendlyName: deviceName, port: port, uuid: device.uuid, serial: device.serial });
 
-var loadDevices = function( devices ){
+  wemo.on('listening', () => {
+    console.log(deviceName + " listening on port " + port);
+  });
 
-	for( var device in devices ){
-		var devprop = devices[device];
-		var dev = wemore.Emulate({ friendlyName: device, port: 9000 + i++, uuid: devprop.uuid, serial: devprop.serial });
+  wemo.on('on', (self, sender) => {
+    var command = device.oncommand;
+    console.log(deviceName + " on");
+    exec(command, (error) => { if (error) console.log(error); });				
+  });
 
-		dev.on( 'listening', (function(device, devprop) {
-			return function(){
-				console.log( device + " Now online, Now listening on", this.port );
-			}
-		})(device, devprop));
+  wemo.on('off', (self, sender) => {
+    var command = device.offcommand;
+    console.log(deviceName + " off");
+    exec(command, (error) => { if (error) console.log(error); });
+  });
+});
 
-		dev.on('on', (function(device, devprop) {
-			var command = devprop.oncommand;
-			return function(){			
-				console.log("Device", device, "recieved on" );
-				if( command ){
-					console.log( 'Executing command "', command, '"' );
-					exec( command, function(error, stdout, stderr) {
-						//console.log( arguments );
-					});				
-				}
-			}
-		})(device, devprop));
-
-		dev.on('off', (function(device, devprop) {
-			var command = devprop.offcommand;
-			return function(){
-				console.log("Device", device, "recieved off" );
-				if( command ){
-					console.log( 'Executing command "', command, '"');
-					exec( command, function(error, stdout, stderr) {
-						//console.log( arguments );
-					});				
-				}
-			}
-		})(device, devprop));
-	}
-
-};
-
-var ProjectRoot = process.cwd();
-var loadWemoEmulation = function( args ){
-	var configpath = ProjectRoot + "/devices.json";
-	if( args.length > 0 ){ configpath = path.resolve(args[0]); }
-	try{
-		console.log("Loading config file: '" + configpath + "'" );
-		var deviceFile = require( configpath );
-		loadDevices( deviceFile );
-	}catch(e){
-		console.log("Error:", e.message );
-		console.log("Invalid Device Configuration File! Exiting..");
-	}
-};
-
-var args = process.argv.slice(2);
-loadWemoEmulation( args );
