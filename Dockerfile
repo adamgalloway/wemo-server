@@ -1,4 +1,4 @@
-FROM balenalib/rpi-debian-node:8
+FROM balenalib/rpi-debian-node:8-build
 
 # Defines our working directory in container
 WORKDIR /usr/src/app
